@@ -5,6 +5,7 @@ import TitleInput from './components/PostForm/TitleInput'
 import CategorySelect from './components/PostForm/CategorySelect'
 import TagInput from './components/PostForm/TagInput'
 import SettingsDialog from './components/Settings/SettingsDialog'
+import SetupScreen from './components/Setup/SetupScreen'
 import StatusBar from './components/Status/StatusBar'
 import PostingOverlay from './components/Status/PostingOverlay'
 import { useMarkdown } from './hooks/useMarkdown'
@@ -19,7 +20,27 @@ export default function App() {
 
   const { markdown, html, updateMarkdown } = useMarkdown()
   const { isPosting, status, result, startPosting, cancelPosting, resetResult } = usePosting()
-  const { settings, credential, updateSettings, saveCredential } = useSettings()
+  const { settings, credential, isLoading, updateSettings, saveCredential } = useSettings()
+
+  // 초기 설정이 안 되어 있으면 설정 화면 표시
+  const needsSetup = !isLoading && (!settings.blogId || !credential.hasPassword)
+
+  const handleSetupComplete = async (data: { naverId: string; password: string; blogId: string }) => {
+    await updateSettings({ blogId: data.blogId })
+    await saveCredential(data.naverId, data.password)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-gray-400 text-sm">불러오는 중...</div>
+      </div>
+    )
+  }
+
+  if (needsSetup) {
+    return <SetupScreen onComplete={handleSetupComplete} />
+  }
 
   const handlePost = async () => {
     if (!title.trim()) {
